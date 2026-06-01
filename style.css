@@ -69,6 +69,11 @@ video {
   bottom: 0;
   font-size: 68px;
   transition: bottom 0.15s ease, transform 0.15s ease;
+  width: 68px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #player.jump {
@@ -85,7 +90,12 @@ video {
   left: 100%;
   width: 50px;
   font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .obstacle.jump {
