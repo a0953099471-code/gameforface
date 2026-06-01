@@ -145,24 +145,65 @@ function gameLoop(time) {
     // Move using left coordinate for smooth, consistent movement
     let left = parseFloat(obs.style.left);
     if (isNaN(left)) left = game.clientWidth;
-    left -= speed * frameFactor;
-    obs.style.left = `${left}px`;
+        // Check collision before movement (use leftBefore)
+        const leftBefore = left;
+        const playerBottomPx = parseFloat(getComputedStyle(player).bottom) || 0;
+        const playerTopG = game.clientHeight - player.offsetHeight - playerBottomPx;
+        const playerLeftG = player.offsetLeft;
+        const playerRightG = playerLeftG + player.offsetWidth;
+        const playerBottomG = playerTopG + player.offsetHeight;
 
-    const playerLeft = player.offsetLeft;
-    const playerRight = playerLeft + player.offsetWidth;
-    const obstacleLeft = left;
-    const obstacleRight = obstacleLeft + obs.offsetWidth;
+        const obsBottomPx = parseFloat(getComputedStyle(obs).bottom) || 0;
+        const obsTopG = game.clientHeight - obs.offsetHeight - obsBottomPx;
+        const obsLeftGBefore = leftBefore;
+        const obsRightGBefore = obsLeftGBefore + obs.offsetWidth;
+        const obsBottomG = obsTopG + obs.offsetHeight;
 
-    // When obstacle enters player's horizontal zone, enforce type-based action
-    const inPlayerZone = obstacleLeft < playerRight && obstacleRight > playerLeft;
-    if (inPlayerZone) {
-      const type = obs.dataset.type;
-      if ((type === "jump" && !jumping) || (type === "duck" && !ducking)) {
-        endGame();
-      }
-    }
+        const overlapBefore = (
+          playerRightG > obsLeftGBefore &&
+          playerLeftG < obsRightGBefore &&
+          playerBottomG > obsTopG &&
+          playerTopG < obsBottomG
+        );
+
+        if (overlapBefore) {
+          const type = obs.dataset.type;
+          const isJumping = player.classList.contains('jump');
+          const isDucking = player.classList.contains('duck');
+          try { window.lastCollision = { type, isJumping, isDucking, left: leftBefore, obsWidth: obs.offsetWidth, playerRect: {left: playerLeftG, right: playerRightG, top: playerTopG, bottom: playerBottomG}, obsRect: {left: obsLeftGBefore, right: obsRightGBefore, top: obsTopG, bottom: obsBottomG} }; } catch (e) {}
+          if ((type === 'jump' && !isJumping) || (type === 'duck' && !isDucking)) {
+            endGame();
+          }
+        }
+
+        // Move after pre-check
+        left -= speed * frameFactor;
+        obs.style.left = `${left}px`;
+        // Force layout to ensure bounding boxes are up-to-date
+        void obs.offsetHeight;
+
+        // Check collision after movement as well
+        const obsLeftG = left;
+        const obsRightG = obsLeftG + obs.offsetWidth;
+        const overlapAfter = (
+          playerRightG > obsLeftG &&
+          playerLeftG < obsRightG &&
+          playerBottomG > obsTopG &&
+          playerTopG < obsBottomG
+        );
+
+        if (overlapAfter) {
+          const type = obs.dataset.type;
+          const isJumping = player.classList.contains('jump');
+          const isDucking = player.classList.contains('duck');
+          try { window.lastCollision = { type, isJumping, isDucking, left, obsWidth: obs.offsetWidth, playerRect: {left: playerLeftG, right: playerRightG, top: playerTopG, bottom: playerBottomG}, obsRect: {left: obsLeftG, right: obsRightG, top: obsTopG, bottom: obsBottomG} }; } catch (e) {}
+          if ((type === 'jump' && !isJumping) || (type === 'duck' && !isDucking)) {
+            endGame();
+          }
+        }
 
     // Remove when fully past left side
+    const obstacleRight = left + obs.offsetWidth;
     if (obstacleRight < -100) {
       obs.remove();
       const removeIndex = obstacles.indexOf(obs);
