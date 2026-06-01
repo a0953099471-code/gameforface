@@ -55,7 +55,7 @@ function createObstacle() {
   obstacle.classList.add("obstacle", type);
   obstacle.dataset.type = type;
   obstacle.textContent = type === "jump" ? "🌵" : "🦅";
-  obstacle.style.right = "-80px";
+  obstacle.style.left = `${game.clientWidth}px`;
   if (type === "jump") {
     obstacle.style.height = "70px";
   } else {
@@ -142,24 +142,28 @@ function gameLoop(time) {
   }
 
   obstacles.slice().forEach((obs) => {
-    let right = parseFloat(obs.style.right) || -80;
-    right += speed * frameFactor;
-    obs.style.right = `${right}px`;
+    // Move using left coordinate for smooth, consistent movement
+    let left = parseFloat(obs.style.left);
+    if (isNaN(left)) left = game.clientWidth;
+    left -= speed * frameFactor;
+    obs.style.left = `${left}px`;
 
     const playerLeft = player.offsetLeft;
     const playerRight = playerLeft + player.offsetWidth;
-    const obstacleLeft = game.clientWidth - right - obs.offsetWidth;
+    const obstacleLeft = left;
     const obstacleRight = obstacleLeft + obs.offsetWidth;
-    const overlapping = obstacleLeft < playerRight && obstacleRight > playerLeft;
 
-    if (overlapping) {
+    // When obstacle enters player's horizontal zone, enforce type-based action
+    const inPlayerZone = obstacleLeft < playerRight && obstacleRight > playerLeft;
+    if (inPlayerZone) {
       const type = obs.dataset.type;
       if ((type === "jump" && !jumping) || (type === "duck" && !ducking)) {
         endGame();
       }
     }
 
-    if (right > game.clientWidth + 80) {
+    // Remove when fully past left side
+    if (obstacleRight < -100) {
       obs.remove();
       const removeIndex = obstacles.indexOf(obs);
       if (removeIndex !== -1) {
@@ -243,5 +247,6 @@ startButton.addEventListener("click", startGame);
 restartButton.addEventListener("click", () => {
   location.reload();
 });
+
 
 
