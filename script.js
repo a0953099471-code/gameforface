@@ -1,325 +1,215 @@
 ﻿const video = document.getElementById("video");
 const player = document.getElementById("player");
 const scoreElement = document.getElementById("score");
+const bestScoreElement = document.getElementById("bestScore");
+const finalScore = document.getElementById("finalScore");
+const finalBestScore = document.getElementById("finalBestScore");
 const statusElement = document.getElementById("status");
 const game = document.getElementById("game");
+const startScreen = document.getElementById("startScreen");
+const gameOverScreen = document.getElementById("gameOverScreen");
+const startButton = document.getElementById("startButton");
+const restartButton = document.getElementById("restartButton");
 
 let score = 0;
+let gameStarted = false;
 let gameOver = false;
-
 let jumping = false;
 let ducking = false;
-
-let speed = 8;
-
-let obstacles = [];
+let speed = 4;
+const obstacleInterval = 2500;
+const obstacles = [];
+let lastObstacleTime = 0;
+let lastScoreTime = 0;
 
 function jump() {
-
-    if (jumping || gameOver) return;
-
-    jumping = true;
-
-    player.classList.add("jump");
-
-    setTimeout(() => {
-
-        player.classList.remove("jump");
-
-        jumping = false;
-
-    }, 600);
+  if (!gameStarted || gameOver || jumping) return;
+  jumping = true;
+  player.classList.add("jump");
+  player.textContent = "😆";
+  setTimeout(() => {
+    player.classList.remove("jump");
+    player.textContent = "😀";
+    jumping = false;
+  }, 600);
 }
 
 function duck() {
-
-    if (ducking || gameOver) return;
-
-    ducking = true;
-
-    player.classList.add("duck");
-
-    setTimeout(() => {
-
-        player.classList.remove("duck");
-
-        ducking = false;
-
-    }, 500);
+  if (!gameStarted || gameOver || ducking) return;
+  ducking = true;
+  player.classList.add("duck");
+  player.textContent = "😑";
+  setTimeout(() => {
+    player.classList.remove("duck");
+    player.textContent = "😀";
+    ducking = false;
+  }, 500);
 }
 
 function createObstacle() {
-
-    if (gameOver) return;
-
-    const obstacle =
-        document.createElement("div");
-
-    obstacle.classList.add("obstacle");
-
-    const type =
-        Math.random() > 0.5
-            ? "jump"
-            : "duck";
-
-    obstacle.dataset.type = type;
-
-    if(type === "jump"){
-
-        obstacle.innerHTML = "🌵";
-
-        obstacle.style.height = "70px";
-
-        obstacle.style.bottom = "0px";
-
-    }
-    else{
-
-        obstacle.innerHTML = "🦅";
-
-        obstacle.style.height = "40px";
-
-        obstacle.style.bottom = "130px";
-    }
-
-    obstacle.style.background = "transparent";
-    obstacle.style.fontSize = "40px";
-    obstacle.style.right = "-50px";
-
-    game.appendChild(obstacle);
-
-    obstacles.push(obstacle);
+  if (!gameStarted || gameOver) return;
+  const obstacle = document.createElement("div");
+  const type = Math.random() > 0.5 ? "jump" : "duck";
+  obstacle.classList.add("obstacle", type);
+  obstacle.dataset.type = type;
+  obstacle.textContent = type === "jump" ? "🌵" : "🦅";
+  obstacle.style.right = "-80px";
+  if (type === "jump") {
+    obstacle.style.height = "70px";
+  } else {
+    obstacle.style.height = "50px";
+  }
+  game.appendChild(obstacle);
+  obstacles.push(obstacle);
 }
 
-let obstacleTimer =
-    setInterval(createObstacle, 1800);
+function startGame() {
+  if (gameStarted) return;
+  gameStarted = true;
+  gameOver = false;
+  score = 0;
+  speed = 4;
+  lastScoreTime = performance.now();
+  lastObstacleTime = performance.now();
+  scoreElement.textContent = score;
+  startScreen.classList.add("hidden");
+  gameOverScreen.classList.add("hidden");
+  statusElement.textContent = "遊戲進行中...";
+  requestAnimationFrame(gameLoop);
+}
 
-function gameLoop() {
+function endGame() {
+  if (gameOver) return;
+  gameOver = true;
+  const best = Math.max(score, Number(localStorage.getItem("bestScore") || 0));
+  localStorage.setItem("bestScore", best);
+  finalScore.textContent = score;
+  finalBestScore.textContent = best;
+  bestScoreElement.textContent = best;
+  statusElement.textContent = "💀 GAME OVER";
+  gameOverScreen.classList.remove("hidden");
+}
 
-    if (gameOver) {
-
-        return;
-    }
-
-    score++;
-
-    scoreElement.textContent = score;
-
-    if (score % 500 === 0) {
-
-        speed += 1;
-    }
-
-    obstacles.forEach((obs, index) => {
-
-        let right =
-            parseInt(obs.style.right);
-
-        right += speed;
-
-        obs.style.right =
-            right + "px";
-
-        const playerRect =
-            player.getBoundingClientRect();
-
-        const obstacleRect =
-            obs.getBoundingClientRect();
-
-        const collision =
-
-            playerRect.left <
-                obstacleRect.right &&
-
-            playerRect.right >
-                obstacleRect.left &&
-
-            playerRect.top <
-                obstacleRect.bottom &&
-
-            playerRect.bottom >
-                obstacleRect.top;
-
-        if(collision){
-
-            const type =
-                obs.dataset.type;
-
-            if(
-                type === "jump"
-                &&
-                !jumping
-            ){
-
-                gameOver = true;
-            }
-
-            if(
-                type === "duck"
-                &&
-                !ducking
-            ){
-
-                gameOver = true;
-            }
-
-            if(gameOver){
-
-                const best =
-                    Math.max(
-                        score,
-                        Number(
-                            localStorage.getItem(
-                                "bestScore"
-                            ) || 0
-                        )
-                    );
-
-                localStorage.setItem(
-                    "bestScore",
-                    best
-                );
-
-                statusElement.textContent =
-                    `💀 GAME OVER | 本次 ${score} | 最高 ${best}`;
-
-                clearInterval(
-                    obstacleTimer
-                );
-            }
-        }
-
-        if (right > 1500) {
-
-            obs.remove();
-
-            obstacles.splice(index, 1);
-        }
-    });
-
+function gameLoop(time) {
+  if (!gameStarted || gameOver) {
     requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  if (time - lastScoreTime >= 100) {
+    score += 1;
+    lastScoreTime += 100;
+    scoreElement.textContent = score;
+    speed = 4 + Math.max(0, Math.floor((score - 1000) / 500));
+  }
+
+  if (time - lastObstacleTime >= obstacleInterval) {
+    createObstacle();
+    lastObstacleTime += obstacleInterval;
+  }
+
+  obstacles.slice().forEach((obs) => {
+    let right = parseFloat(obs.style.right) || -80;
+    right += speed;
+    obs.style.right = `${right}px`;
+
+    const playerLeft = player.offsetLeft;
+    const playerRight = playerLeft + player.offsetWidth;
+    const obstacleLeft = game.clientWidth - right - obs.offsetWidth;
+    const obstacleRight = obstacleLeft + obs.offsetWidth;
+    const overlapping = obstacleLeft < playerRight && obstacleRight > playerLeft;
+
+    if (overlapping) {
+      const type = obs.dataset.type;
+      if ((type === "jump" && !jumping) || (type === "duck" && !ducking)) {
+        endGame();
+      }
+    }
+
+    if (right > game.clientWidth + 80) {
+      obs.remove();
+      const removeIndex = obstacles.indexOf(obs);
+      if (removeIndex !== -1) {
+        obstacles.splice(removeIndex, 1);
+      }
+    }
+  });
+
+  requestAnimationFrame(gameLoop);
 }
 
 function distance(a, b) {
-
-    return Math.hypot(
-        a.x - b.x,
-        a.y - b.y
-    );
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 const faceMesh = new FaceMesh({
-
-    locateFile: (file) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
 });
 
 faceMesh.setOptions({
-
-    maxNumFaces: 1,
-    refineLandmarks: true
-
+  maxNumFaces: 1,
+  refineLandmarks: true
 });
 
 faceMesh.onResults((results) => {
+  if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+    return;
+  }
 
-    if (
-        !results.multiFaceLandmarks ||
-        results.multiFaceLandmarks.length === 0
-    ) {
-        return;
-    }
+  const lm = results.multiFaceLandmarks[0];
+  const mouth = distance(lm[13], lm[14]) / distance(lm[78], lm[308]);
+  const leftEye = distance(lm[159], lm[145]) / distance(lm[33], lm[133]);
+  const rightEye = distance(lm[386], lm[374]) / distance(lm[263], lm[362]);
+  const eye = (leftEye + rightEye) / 2;
 
-    const lm =
-        results.multiFaceLandmarks[0];
+  if (mouth > 0.30) {
+    jump();
+  }
 
-    const mouth =
-
-        distance(
-            lm[13],
-            lm[14]
-        )
-
-        /
-
-        distance(
-            lm[78],
-            lm[308]
-        );
-
-    const leftEye =
-
-        distance(
-            lm[159],
-            lm[145]
-        )
-
-        /
-
-        distance(
-            lm[33],
-            lm[133]
-        );
-
-    const rightEye =
-
-        distance(
-            lm[386],
-            lm[374]
-        )
-
-        /
-
-        distance(
-            lm[263],
-            lm[362]
-        );
-
-    const eye =
-        (leftEye + rightEye) / 2;
-
-    if (mouth > 0.30) {
-
-        jump();
-    }
-
-    if (eye < 0.15) {
-
-        duck();
-    }
+  if (eye < 0.15) {
+    duck();
+  }
 });
 
-const camera = new Camera(video, {
+let camera;
 
-    onFrame: async () => {
+async function initCamera() {
+  const best = Number(localStorage.getItem("bestScore") || 0);
+  bestScoreElement.textContent = best;
 
-        await faceMesh.send({
-            image: video
-        });
-    },
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+    statusElement.textContent = "無法取得相機，請允許相機或直接按開始遊戲";
+    return;
+  }
 
-    width: 640,
-    height: 480
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const hasVideoInput = devices.some((device) => device.kind === "videoinput");
+    if (!hasVideoInput) {
+      statusElement.textContent = "無法取得相機，請允許相機或直接按開始遊戲";
+      return;
+    }
 
-});
-
-camera.start().then(() => {
-
-    const best =
-        localStorage.getItem(
-            "bestScore"
-        ) || 0;
-
-    statusElement.textContent =
-        `😆 張嘴跳躍｜😑 閉眼下蹲｜🏆最高 ${best}`;
-});
-
-document
-    .getElementById("restart")
-    .addEventListener("click", () => {
-
-        location.reload();
+    camera = new Camera(video, {
+      onFrame: async () => {
+        await faceMesh.send({ image: video });
+      },
+      width: 640,
+      height: 480
     });
 
-requestAnimationFrame(gameLoop);
+    await camera.start();
+    statusElement.textContent = "張嘴跳躍、閉眼下蹲，按下開始遊戲";
+  } catch (error) {
+    statusElement.textContent = "無法取得相機，請允許相機或直接按開始遊戲";
+    console.error('Camera start failed:', error);
+  }
+}
+
+initCamera();
+
+startButton.addEventListener("click", startGame);
+restartButton.addEventListener("click", () => {
+  location.reload();
+});
+
