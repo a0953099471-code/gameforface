@@ -88,7 +88,7 @@ function createObstacle() {
 
         obstacle.textContent = "🦅";
 
-        obstacle.style.bottom = "90px";
+        obstacle.style.bottom = "65px";
         obstacle.style.width = "60px";
         obstacle.style.height = "50px";
     }
