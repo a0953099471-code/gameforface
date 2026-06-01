@@ -3,71 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Face Dino</title>
-
 <link rel="stylesheet" href="style.css">
-
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 </head>
-
 <body>
-
 <h1>Face Dino</h1>
-
 <div class="container">
-
-<div class="camera-panel">
+  <div class="camera-panel">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="overlay"></canvas>
-
     <div class="info">
-
-    <h3>🎮 遊戲規則</h3>
-
-    <p id="status">等待相機...</p>
-
-    <p>😆 張嘴 → 跳躍</p>
-
-    <p>😑 閉眼 → 下蹲</p>
-
-    <p>🌵 地面障礙物必須跳過</p>
-
-    <p>🦅 空中障礙物必須蹲下</p>
-
-    <p>⚡ 分數越高速度越快</p>
-
-</div>
-</div>
-
-<div class="game-panel">
-
-    <div class="score">
-        分數：
-        <span id="score">0</span>
+      <h3>🎮 遊戲規則</h3>
+      <p id="status">等待相機...</p>
+      <p>😆 張嘴 → 跳躍</p>
+      <p>😑 閉眼 → 下蹲</p>
+      <p>🌵 地面障礙物必須跳過</p>
+      <p>🦅 空中障礙物必須蹲下</p>
+      <p>⚡ 分數到 1000 前不加速，之後每 500 分加速</p>
     </div>
-
+  </div>
+  <div class="game-panel">
+    <div class="scoreboard">
+      <div class="score-title">Face Dino</div>
+      <div class="score-row">分數：<span id="score">0</span></div>
+      <div class="score-row">最高：<span id="bestScore">0</span></div>
+    </div>
     <div id="game">
-
-        <div id="player">😀</div>
-
+      <div id="player">😀</div>
+      <div class="ground"></div>
+      <div class="overlay-screen" id="startScreen">
+        <div class="screen-content">
+          <h2>Face Dino</h2>
+          <p>😆 張嘴 = 跳躍</p>
+          <p>😑 閉眼 = 下蹲</p>
+          <p>🌵 必須跳過</p>
+          <p>🦅 必須蹲下</p>
+          <button id="startButton">開始遊戲</button>
+        </div>
+      </div>
+      <div class="overlay-screen hidden" id="gameOverScreen">
+        <div class="screen-content">
+          <h2>GAME OVER</h2>
+          <p>本次分數：<span id="finalScore">0</span></p>
+          <p>最高分：<span id="finalBestScore">0</span></p>
+          <button id="restartButton">重新開始</button>
+        </div>
+      </div>
     </div>
-
-    <button id="restart">
-        重新開始
-    </button>
-
+  </div>
 </div>
-
-</div>
-
 <script src="script.js"></script>
-
 </body>
 </html>
     </div>
     <script src="script.js" defer></script>
 </body>
 </html>
+
