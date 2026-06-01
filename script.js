@@ -1,4 +1,4 @@
-﻿const video = document.getElementById("video");
+const video = document.getElementById("video");
 const player = document.getElementById("player");
 const scoreElement = document.getElementById("score");
 const bestScoreElement = document.getElementById("bestScore");
@@ -63,6 +63,54 @@ function createObstacle() {
   }
   game.appendChild(obstacle);
   obstacles.push(obstacle);
+}
+
+const playerRect =
+    player.getBoundingClientRect();
+
+const obstacleRect =
+    obs.getBoundingClientRect();
+
+const collision =
+
+    playerRect.left <
+        obstacleRect.right &&
+
+    playerRect.right >
+        obstacleRect.left &&
+
+    playerRect.top <
+        obstacleRect.bottom &&
+
+    playerRect.bottom >
+        obstacleRect.top;
+
+if(collision){
+
+    const type =
+        obs.dataset.type;
+
+    if(
+        type === "jump"
+        &&
+        !player.classList.contains("jump")
+    ){
+
+        endGame();
+
+        return;
+    }
+
+    if(
+        type === "duck"
+        &&
+        !player.classList.contains("duck")
+    ){
+
+        endGame();
+
+        return;
+    }
 }
 
 function cancelGameLoop() {
@@ -145,62 +193,47 @@ function gameLoop(time) {
     // Move using left coordinate for smooth, consistent movement
     let left = parseFloat(obs.style.left);
     if (isNaN(left)) left = game.clientWidth;
-        // Check collision before movement (use leftBefore)
-        const leftBefore = left;
-        const playerBottomPx = parseFloat(getComputedStyle(player).bottom) || 0;
-        const playerTopG = game.clientHeight - player.offsetHeight - playerBottomPx;
-        const playerLeftG = player.offsetLeft;
-        const playerRightG = playerLeftG + player.offsetWidth;
-        const playerBottomG = playerTopG + player.offsetHeight;
 
-        const obsBottomPx = parseFloat(getComputedStyle(obs).bottom) || 0;
-        const obsTopG = game.clientHeight - obs.offsetHeight - obsBottomPx;
-        const obsLeftGBefore = leftBefore;
-        const obsRightGBefore = obsLeftGBefore + obs.offsetWidth;
-        const obsBottomG = obsTopG + obs.offsetHeight;
+    const playerRect = getPlayerCollisionRect();
+    const obsRectBefore = obs.getBoundingClientRect();
+    const overlapBefore = (
+      playerRect.right > obsRectBefore.left &&
+      playerRect.left < obsRectBefore.right &&
+      playerRect.bottom > obsRectBefore.top &&
+      playerRect.top < obsRectBefore.bottom
+    );
 
-        const overlapBefore = (
-          playerRightG > obsLeftGBefore &&
-          playerLeftG < obsRightGBefore &&
-          playerBottomG > obsTopG &&
-          playerTopG < obsBottomG
-        );
+    if (overlapBefore) {
+      const type = obs.dataset.type;
+      const isJumping = player.classList.contains('jump');
+      const isDucking = player.classList.contains('duck');
+      try { window.lastCollision = { type, isJumping, isDucking, before: { playerRect, obsRect: obsRectBefore } }; } catch (e) {}
+      if ((type === 'jump' && !isJumping) || (type === 'duck' && !isDucking)) {
+        endGame();
+      }
+    }
 
-        if (overlapBefore) {
-          const type = obs.dataset.type;
-          const isJumping = player.classList.contains('jump');
-          const isDucking = player.classList.contains('duck');
-          try { window.lastCollision = { type, isJumping, isDucking, left: leftBefore, obsWidth: obs.offsetWidth, playerRect: {left: playerLeftG, right: playerRightG, top: playerTopG, bottom: playerBottomG}, obsRect: {left: obsLeftGBefore, right: obsRightGBefore, top: obsTopG, bottom: obsBottomG} }; } catch (e) {}
-          if ((type === 'jump' && !isJumping) || (type === 'duck' && !isDucking)) {
-            endGame();
-          }
-        }
+    left -= speed * frameFactor;
+    obs.style.left = `${left}px`;
+    void obs.offsetHeight;
 
-        // Move after pre-check
-        left -= speed * frameFactor;
-        obs.style.left = `${left}px`;
-        // Force layout to ensure bounding boxes are up-to-date
-        void obs.offsetHeight;
+    const obsRectAfter = obs.getBoundingClientRect();
+    const overlapAfter = (
+      playerRect.right > obsRectAfter.left &&
+      playerRect.left < obsRectAfter.right &&
+      playerRect.bottom > obsRectAfter.top &&
+      playerRect.top < obsRectAfter.bottom
+    );
 
-        // Check collision after movement as well
-        const obsLeftG = left;
-        const obsRightG = obsLeftG + obs.offsetWidth;
-        const overlapAfter = (
-          playerRightG > obsLeftG &&
-          playerLeftG < obsRightG &&
-          playerBottomG > obsTopG &&
-          playerTopG < obsBottomG
-        );
-
-        if (overlapAfter) {
-          const type = obs.dataset.type;
-          const isJumping = player.classList.contains('jump');
-          const isDucking = player.classList.contains('duck');
-          try { window.lastCollision = { type, isJumping, isDucking, left, obsWidth: obs.offsetWidth, playerRect: {left: playerLeftG, right: playerRightG, top: playerTopG, bottom: playerBottomG}, obsRect: {left: obsLeftG, right: obsRightG, top: obsTopG, bottom: obsBottomG} }; } catch (e) {}
-          if ((type === 'jump' && !isJumping) || (type === 'duck' && !isDucking)) {
-            endGame();
-          }
-        }
+    if (overlapAfter) {
+      const type = obs.dataset.type;
+      const isJumping = player.classList.contains('jump');
+      const isDucking = player.classList.contains('duck');
+      try { window.lastCollision = { type, isJumping, isDucking, after: { playerRect, obsRect: obsRectAfter } }; } catch (e) {}
+      if ((type === 'jump' && !isJumping) || (type === 'duck' && !isDucking)) {
+        endGame();
+      }
+    }
 
     // Remove when fully past left side
     const obstacleRight = left + obs.offsetWidth;
@@ -288,6 +321,7 @@ startButton.addEventListener("click", startGame);
 restartButton.addEventListener("click", () => {
   location.reload();
 });
+
 
 
 
