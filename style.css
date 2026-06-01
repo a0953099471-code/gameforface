@@ -82,7 +82,7 @@ video {
 
 .obstacle {
   position: absolute;
-  right: -80px;
+  left: 100%;
   width: 50px;
   font-size: 48px;
   text-align: center;
@@ -93,7 +93,7 @@ video {
 }
 
 .obstacle.duck {
-  bottom: 130px;
+  bottom: 90px;
 }
 
 .ground {
@@ -153,5 +153,6 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
 
 
