@@ -88,9 +88,9 @@ function createObstacle() {
 
         obstacle.textContent = "🦅";
 
-        obstacle.style.bottom = "40px";
+        obstacle.style.bottom = "45px";
         obstacle.style.width = "60px";
-        obstacle.style.height = "50px";
+        obstacle.style.height = "100px";
     }
 
     game.appendChild(obstacle);
