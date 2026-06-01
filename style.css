@@ -68,3 +68,25 @@ button{
     padding:10px 20px;
     font-size:18px;
 }
+
+.ground{
+
+    position:absolute;
+
+    bottom:0;
+
+    width:100%;
+
+    height:6px;
+
+    background:white;
+}
+
+.high-score{
+
+    font-size:20px;
+
+    margin-top:10px;
+
+    color:gold;
+}
