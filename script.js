@@ -1,150 +1,165 @@
 ﻿const video = document.getElementById("video");
-
 const player = document.getElementById("player");
-
 const scoreElement = document.getElementById("score");
-
 const statusElement = document.getElementById("status");
-
 const game = document.getElementById("game");
 
 let score = 0;
-
 let gameOver = false;
 
 let jumping = false;
-
 let ducking = false;
+
+let speed = 8;
 
 let obstacles = [];
 
-function jump(){
+function jump() {
 
-    if(jumping) return;
+    if (jumping || gameOver) return;
 
     jumping = true;
 
     player.classList.add("jump");
 
-    setTimeout(()=>{
+    setTimeout(() => {
 
         player.classList.remove("jump");
 
         jumping = false;
 
-    },600);
+    }, 600);
 }
 
-function duck(){
+function duck() {
 
-    if(ducking) return;
+    if (ducking || gameOver) return;
 
     ducking = true;
 
     player.classList.add("duck");
 
-    setTimeout(()=>{
+    setTimeout(() => {
 
         player.classList.remove("duck");
 
         ducking = false;
 
-    },500);
+    }, 500);
 }
 
-function createObstacle(){
+function createObstacle() {
 
-    if(gameOver) return;
+    if (gameOver) return;
 
-    const obs = document.createElement("div");
+    const obstacle = document.createElement("div");
 
-    obs.classList.add("obstacle");
+    obstacle.classList.add("obstacle");
 
-    obs.style.right = "-50px";
+    obstacle.style.right = "-50px";
 
-    game.appendChild(obs);
+    game.appendChild(obstacle);
 
-    obstacles.push(obs);
+    obstacles.push(obstacle);
 }
 
-setInterval(createObstacle,2000);
+let obstacleTimer = setInterval(createObstacle, 1800);
 
-function gameLoop(){
+function gameLoop() {
 
-    if(gameOver) return;
+    if (gameOver) {
+
+        statusElement.textContent = "💀 GAME OVER";
+
+        return;
+    }
 
     score++;
 
     scoreElement.textContent = score;
 
-    obstacles.forEach((obs,index)=>{
+    if (score % 500 === 0) {
+
+        speed += 1;
+    }
+
+    obstacles.forEach((obs, index) => {
 
         let right = parseInt(obs.style.right);
 
-        right += 8;
+        right += speed;
 
         obs.style.right = right + "px";
 
-        const x = 800 - right;
+        const playerRect =
+            player.getBoundingClientRect();
 
-        if(x < 130 && x > 50){
+        const obstacleRect =
+            obs.getBoundingClientRect();
 
-            if(!jumping && !ducking){
+        const collision =
 
-                gameOver = true;
+            playerRect.left <
+                obstacleRect.right &&
 
-                statusElement.textContent =
-                    "GAME OVER";
+            playerRect.right >
+                obstacleRect.left &&
 
-            }
+            playerRect.top <
+                obstacleRect.bottom &&
+
+            playerRect.bottom >
+                obstacleRect.top;
+
+        if (collision) {
+
+            gameOver = true;
+
+            statusElement.textContent =
+                `💀 GAME OVER | 分數 ${score}`;
+
+            return;
         }
 
-        if(right > 900){
+        if (right > 1500) {
 
             obs.remove();
 
-            obstacles.splice(index,1);
+            obstacles.splice(index, 1);
         }
     });
+
+    requestAnimationFrame(gameLoop);
 }
 
-setInterval(gameLoop,50);
-
-document.getElementById("restart")
-.addEventListener("click",()=>{
-
-    location.reload();
-
-});
-
-function distance(a,b){
+function distance(a, b) {
 
     return Math.hypot(
-        a.x-b.x,
-        a.y-b.y
+        a.x - b.x,
+        a.y - b.y
     );
 }
 
 const faceMesh = new FaceMesh({
 
-    locateFile:(file)=>
-    `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+    locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
 
 });
 
 faceMesh.setOptions({
 
-    maxNumFaces:1,
-    refineLandmarks:true
+    maxNumFaces: 1,
+    refineLandmarks: true
 
 });
 
-faceMesh.onResults(results=>{
+faceMesh.onResults((results) => {
 
-    if(
+    if (
         !results.multiFaceLandmarks ||
-        results.multiFaceLandmarks.length===0
-    ){
+        results.multiFaceLandmarks.length === 0
+    ) {
         return;
     }
 
@@ -194,39 +209,46 @@ faceMesh.onResults(results=>{
         );
 
     const eye =
-        (leftEye+rightEye)/2;
+        (leftEye + rightEye) / 2;
 
-    if(mouth > 0.30){
+    if (mouth > 0.30) {
 
         jump();
-
     }
 
-    if(eye < 0.15){
+    if (eye < 0.15) {
 
         duck();
-
     }
 });
 
-const camera = new Camera(video,{
+const camera = new Camera(video, {
 
-    onFrame:async()=>{
+    onFrame: async () => {
 
         await faceMesh.send({
-            image:video
+            image: video
         });
-
     },
 
-    width:640,
-    height:480
+    width: 640,
+    height: 480
 
 });
 
-camera.start().then(()=>{
+camera.start().then(() => {
 
     statusElement.textContent =
-        "張嘴跳躍｜閉眼下蹲";
-
+        "😆 張嘴跳躍｜😑 閉眼下蹲";
 });
+
+document
+    .getElementById("restart")
+    .addEventListener("click", () => {
+
+        clearInterval(obstacleTimer);
+
+        location.reload();
+    });
+
+requestAnimationFrame(gameLoop);
