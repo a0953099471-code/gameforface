@@ -52,10 +52,38 @@ function createObstacle() {
 
     if (gameOver) return;
 
-    const obstacle = document.createElement("div");
+    const obstacle =
+        document.createElement("div");
 
     obstacle.classList.add("obstacle");
 
+    const type =
+        Math.random() > 0.5
+            ? "jump"
+            : "duck";
+
+    obstacle.dataset.type = type;
+
+    if(type === "jump"){
+
+        obstacle.innerHTML = "🌵";
+
+        obstacle.style.height = "70px";
+
+        obstacle.style.bottom = "0px";
+
+    }
+    else{
+
+        obstacle.innerHTML = "🦅";
+
+        obstacle.style.height = "40px";
+
+        obstacle.style.bottom = "130px";
+    }
+
+    obstacle.style.background = "transparent";
+    obstacle.style.fontSize = "40px";
     obstacle.style.right = "-50px";
 
     game.appendChild(obstacle);
@@ -63,13 +91,12 @@ function createObstacle() {
     obstacles.push(obstacle);
 }
 
-let obstacleTimer = setInterval(createObstacle, 1800);
+let obstacleTimer =
+    setInterval(createObstacle, 1800);
 
 function gameLoop() {
 
     if (gameOver) {
-
-        statusElement.textContent = "💀 GAME OVER";
 
         return;
     }
@@ -85,11 +112,13 @@ function gameLoop() {
 
     obstacles.forEach((obs, index) => {
 
-        let right = parseInt(obs.style.right);
+        let right =
+            parseInt(obs.style.right);
 
         right += speed;
 
-        obs.style.right = right + "px";
+        obs.style.right =
+            right + "px";
 
         const playerRect =
             player.getBoundingClientRect();
@@ -111,14 +140,53 @@ function gameLoop() {
             playerRect.bottom >
                 obstacleRect.top;
 
-        if (collision) {
+        if(collision){
 
-            gameOver = true;
+            const type =
+                obs.dataset.type;
 
-            statusElement.textContent =
-                `💀 GAME OVER | 分數 ${score}`;
+            if(
+                type === "jump"
+                &&
+                !jumping
+            ){
 
-            return;
+                gameOver = true;
+            }
+
+            if(
+                type === "duck"
+                &&
+                !ducking
+            ){
+
+                gameOver = true;
+            }
+
+            if(gameOver){
+
+                const best =
+                    Math.max(
+                        score,
+                        Number(
+                            localStorage.getItem(
+                                "bestScore"
+                            ) || 0
+                        )
+                    );
+
+                localStorage.setItem(
+                    "bestScore",
+                    best
+                );
+
+                statusElement.textContent =
+                    `💀 GAME OVER | 本次 ${score} | 最高 ${best}`;
+
+                clearInterval(
+                    obstacleTimer
+                );
+            }
         }
 
         if (right > 1500) {
@@ -238,15 +306,18 @@ const camera = new Camera(video, {
 
 camera.start().then(() => {
 
+    const best =
+        localStorage.getItem(
+            "bestScore"
+        ) || 0;
+
     statusElement.textContent =
-        "😆 張嘴跳躍｜😑 閉眼下蹲";
+        `😆 張嘴跳躍｜😑 閉眼下蹲｜🏆最高 ${best}`;
 });
 
 document
     .getElementById("restart")
     .addEventListener("click", () => {
-
-        clearInterval(obstacleTimer);
 
         location.reload();
     });
