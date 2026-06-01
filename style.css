@@ -103,7 +103,7 @@ video {
 }
 
 .obstacle.duck {
-  bottom: 66px;
+  bottom: 90px;
 }
 
 .ground {
@@ -163,6 +163,7 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
 
 
 
