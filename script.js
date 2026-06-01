@@ -21,6 +21,8 @@ const obstacleInterval = 2500;
 const obstacles = [];
 let lastObstacleTime = 0;
 let lastScoreTime = 0;
+let lastFrameTime = 0;
+let gameTimer = null;
 
 function jump() {
   if (!gameStarted || gameOver || jumping) return;
@@ -63,6 +65,29 @@ function createObstacle() {
   obstacles.push(obstacle);
 }
 
+function cancelGameLoop() {
+  if (gameTimer !== null) {
+    if (typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(gameTimer);
+    }
+    clearTimeout(gameTimer);
+    gameTimer = null;
+  }
+}
+
+function scheduleGameLoop() {
+  gameTimer = setTimeout(() => loopStep(performance.now()), 1000 / 60);
+}
+
+function loopStep(time) {
+  if (!gameStarted || gameOver) {
+    return;
+  }
+
+  gameLoop(time || performance.now());
+  scheduleGameLoop();
+}
+
 function startGame() {
   if (gameStarted) return;
   gameStarted = true;
@@ -71,14 +96,17 @@ function startGame() {
   speed = 4;
   lastScoreTime = performance.now();
   lastObstacleTime = performance.now();
+  lastFrameTime = performance.now();
   scoreElement.textContent = score;
   startScreen.classList.add("hidden");
   gameOverScreen.classList.add("hidden");
   statusElement.textContent = "遊戲進行中...";
-  requestAnimationFrame(gameLoop);
+  cancelGameLoop();
+  scheduleGameLoop();
 }
 
 function endGame() {
+  cancelGameLoop();
   if (gameOver) return;
   gameOver = true;
   const best = Math.max(score, Number(localStorage.getItem("bestScore") || 0));
@@ -92,25 +120,30 @@ function endGame() {
 
 function gameLoop(time) {
   if (!gameStarted || gameOver) {
-    requestAnimationFrame(gameLoop);
     return;
   }
 
-  if (time - lastScoreTime >= 100) {
-    score += 1;
-    lastScoreTime += 100;
+  const deltaTime = time - lastFrameTime;
+  lastFrameTime = time;
+  const frameFactor = deltaTime / (1000 / 60);
+
+  const scoreSteps = Math.floor((time - lastScoreTime) / 100);
+  if (scoreSteps > 0) {
+    score += scoreSteps;
+    lastScoreTime += scoreSteps * 100;
     scoreElement.textContent = score;
     speed = 4 + Math.max(0, Math.floor((score - 1000) / 500));
   }
 
-  if (time - lastObstacleTime >= obstacleInterval) {
+  const obstacleSteps = Math.floor((time - lastObstacleTime) / obstacleInterval);
+  for (let i = 0; i < obstacleSteps; i++) {
     createObstacle();
     lastObstacleTime += obstacleInterval;
   }
 
   obstacles.slice().forEach((obs) => {
     let right = parseFloat(obs.style.right) || -80;
-    right += speed;
+    right += speed * frameFactor;
     obs.style.right = `${right}px`;
 
     const playerLeft = player.offsetLeft;
@@ -134,8 +167,6 @@ function gameLoop(time) {
       }
     }
   });
-
-  requestAnimationFrame(gameLoop);
 }
 
 function distance(a, b) {
@@ -212,4 +243,5 @@ startButton.addEventListener("click", startGame);
 restartButton.addEventListener("click", () => {
   location.reload();
 });
+
 
